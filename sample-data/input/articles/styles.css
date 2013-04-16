@@ -1,0 +1,118 @@
+
+body {
+    background-color: #016483;
+    font-family:Georgia, serif;
+}
+
+pre { 
+    font-family:Bitstream Vera Sans Mono,monospace;
+    font-size:13px; 
+    color:#000000;
+    border:1px solid lightgrey;
+}
+
+code,kbd,tt { 
+    font-family:Bitstream Vera Sans Mono,monospace; 
+    font-size:13px;
+    color:#0000C0;
+}
+
+a:link { 
+    color:#000000; 
+    text-decoration:underline; 
+}
+
+a:visited { 
+    color:#777777;
+    text-decoration:underline; 
+}
+
+a:active { 
+    color:#000000; 
+    text-decoration:none; 
+}
+
+ul li { 
+    margin-top:3px; 
+}
+
+#navigation {
+    background-color: #d92929;
+    font-family:Helvetica, sans-serif;
+    margin: 0 auto;
+    width: 800px;
+    height: 40px;
+    padding: 10px;
+    border-radius: 5px;
+    position: relative;
+}
+
+#menu {
+    top: 50%;
+    height: 20px;
+    margin-top: -10px;
+    position: absolute;
+}
+
+#menu ul {
+    float: left;
+    list-style: none outside none;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+}
+
+#menu li {
+    color: #FFFFFF;
+    float: left;
+    list-style: none outside none;
+    margin: 0;
+    padding-right: 20px;
+}
+
+#menu a:link {
+    color: #ffffff;
+    text-decoration:none; 
+}
+
+#menu a:visited { 
+    color: #ffffff;
+    text-decoration:none; 
+}
+
+#menu a:hover {
+    text-decoration:underline;
+}
+
+#menu a:active { 
+    text-decoration:none; 
+}
+
+#page {
+    background-color: #6ecac7;
+    margin: 0 auto;
+    width: 800px;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+#splash {
+    background-color: #f2cb05;
+    position: absolute;
+    left: 500px;
+    top: 30px;
+    height: 40px;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+#footer {
+    background-color: #f2911b;
+    font-family:Helvetica, sans-serif;
+    font-size: 10px;
+    margin: 0 auto;
+    width: 800px;
+    padding: 10px;
+    border-radius: 5px;
+}
+

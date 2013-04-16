@@ -1,0 +1,76 @@
+<html>
+  <head>
+    <link href="styles.css" type="text/css" rel="stylesheet" />
+    <link href="pygments.css" type="text/css" rel="stylesheet" />
+    <meta charset="utf-8" />
+    <topics>Architecture Clojure</topics>
+    <date>12.4.2013</date>
+  </head>
+  <body>
+    <div id="page">
+    <h1>First Article</h1>
+ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean pellentesque, sem nec feugiat pellentesque, arcu libero auctor eros, in rutrum massa quam ut magna. In sit amet tellus id arcu ornare tincidunt. Nullam augue dui, euismod bibendum scelerisque id, semper at augue. Aenean arcu eros, tristique sit amet condimentum at, ornare nec erat. Morbi varius viverra velit et scelerisque. Pellentesque non ante orci, et semper risus. Etiam rhoncus velit ut velit condimentum dapibus. Morbi ut felis purus. Vestibulum quis urna lorem. Pellentesque lacinia risus et magna pharetra eu porttitor turpis imperdiet. Vestibulum vel nisi vitae sem tempus ultrices ac ut nulla. Ut eget convallis nisl. Praesent eros lorem, porta vitae feugiat in, mattis ut justo. Donec non tortor nisl, a tincidunt quam. Mauris id dui quis tellus varius semper.
+<p/>
+<ul><li>An item.</li></ul>
+<p/>
+<img src="2013-04-12__mountain-view.jpg"/>
+<p/>
+Phasellus condimentum molestie sem, eu accumsan diam volutpat ut. Nulla at pretium justo. Etiam accumsan iaculis libero, sit amet molestie ligula dignissim ut. Nulla odio massa, feugiat nec sollicitudin non, bibendum quis tortor. Nullam pellentesque dui a tortor imperdiet pulvinar. In lacinia sapien vel orci pellentesque ac viverra lorem lobortis. Sed ante nulla, tincidunt ac tincidunt et, dignissim in dui. Ut ornare, diam ut molestie luctus, turpis dui sagittis mi, a rutrum neque tortor ut metus. Suspendisse sit amet eros lorem. Vivamus nec justo felis, ut sagittis mauris. Curabitur diam tellus, tincidunt in gravida a, semper id nibh. Duis in massa nec mauris gravida convallis vitae ut ante. Praesent rutrum sollicitudin orci, id eleifend magna mattis non. 
+    <a href="styles.css">A link.</a>
+    
+<div class="syntax"><pre><span class="p">(</span><span class="nf">ns</span> <span class="nv">snippets</span><span class="o">.</span><span class="nv">handlers</span><span class="p">)</span>
+
+
+<span class="p">(</span><span class="k">defn </span><span class="nv">augment</span>
+  <span class="p">[</span><span class="nv">f</span> <span class="nv">&amp;</span> <span class="nv">handlers</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">reduce </span><span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">augmented</span> <span class="nv">h</span><span class="p">]</span>
+            <span class="p">(</span><span class="nb">partial </span><span class="nv">h</span> <span class="nv">augmented</span><span class="p">))</span>
+          <span class="nv">f</span>
+          <span class="p">(</span><span class="nb">reverse </span><span class="nv">handlers</span><span class="p">)))</span>
+
+
+<span class="c1">;; Sample handlers for cross-cutting concerns</span>
+
+<span class="p">(</span><span class="k">defn </span><span class="nv">handle-tx</span>
+  <span class="p">[</span><span class="nv">f</span> <span class="nv">&amp;</span> <span class="nv">args</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">println </span><span class="s">"BEGIN TX"</span><span class="p">)</span>
+  <span class="p">(</span><span class="nf">try</span>
+    <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">result</span> <span class="p">(</span><span class="nb">apply </span><span class="nv">f</span> <span class="nv">args</span><span class="p">)]</span>
+      <span class="p">(</span><span class="nb">println </span><span class="s">"COMMIT TX"</span><span class="p">)</span>
+      <span class="nv">result</span><span class="p">)</span>
+    <span class="p">(</span><span class="nf">catch</span> <span class="nv">Exception</span> <span class="nv">ex</span> <span class="p">(</span><span class="nf">do</span>
+                          <span class="p">(</span><span class="nb">println </span><span class="s">"ABORT TX"</span><span class="p">)</span>
+                          <span class="p">(</span><span class="nf">throw</span> <span class="nv">ex</span><span class="p">)))))</span>
+
+<span class="p">(</span><span class="k">defn </span><span class="nv">handle-exceptions</span>
+  <span class="p">[</span><span class="nv">f</span> <span class="nv">&amp;</span> <span class="nv">args</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">try</span> <span class="p">(</span><span class="nb">apply </span><span class="nv">f</span> <span class="nv">args</span><span class="p">)</span>
+         <span class="p">(</span><span class="nf">catch</span> <span class="nv">Exception</span> <span class="nv">ex</span> <span class="p">(</span><span class="nb">println </span><span class="s">"Caught Exception"</span> <span class="nv">ex</span><span class="p">))))</span>
+
+<span class="c1">;; Sample business functions</span>
+
+<span class="p">(</span><span class="k">defn </span><span class="nv">say-hello</span> <span class="p">[</span><span class="nv">x</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">println </span><span class="s">"Hello"</span> <span class="nv">x</span><span class="p">))</span>
+
+<span class="p">(</span><span class="k">defn </span><span class="nv">throw-something</span> <span class="p">[</span><span class="nv">b</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">if </span><span class="nv">b</span>
+    <span class="p">(</span><span class="nf">throw</span> <span class="p">(</span><span class="nf">IllegalArgumentException</span><span class="o">.</span> <span class="s">"Oops"</span><span class="p">))</span>
+    <span class="p">(</span><span class="nb">println </span><span class="s">"Success"</span><span class="p">)))</span>
+
+<span class="c1">;; Create augmented functions that deal with cross-cutting concerns</span>
+
+<span class="p">(</span><span class="k">def </span><span class="nv">say-hello-augmented</span> <span class="p">(</span><span class="nf">augment</span> <span class="nv">say-hello</span>
+                                  <span class="nv">handle-exceptions</span>
+                                  <span class="nv">handle-tx</span><span class="p">))</span>
+
+<span class="p">(</span><span class="k">def </span><span class="nv">throw-something-augmented</span> <span class="p">(</span><span class="nf">augment</span> <span class="nv">throw-something</span>
+                                        <span class="nv">handle-exceptions</span>
+                                        <span class="nv">handle-tx</span><span class="p">))</span>
+
+
+</pre></div>
+
+Suspendisse et dolor velit. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Etiam pulvinar dolor ac mi faucibus vel porta nunc bibendum. Nulla enim metus, vehicula scelerisque lacinia non, tristique ac orci. Cras vel dapibus purus. Nam egestas enim ut nisl porta euismod. Curabitur sed arcu vitae dolor porttitor faucibus at id est. Aliquam quis augue sed purus dignissim rhoncus sit amet a neque. Nulla nec sapien a erat consequat malesuada. Morbi sodales dignissim orci eu auctor. Curabitur elit neque, vulputate ut egestas nec, gravida eu tellus.
+  </div>     
+  </body>
+</html>
