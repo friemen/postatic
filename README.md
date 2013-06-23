@@ -3,6 +3,7 @@ postatic
 
 A generator for static websites made up of article-like postings.
 
+[![Build Status](https://travis-ci.org/friemen/postatic.png?branch=master)](https://travis-ci.org/friemen/postatic)
 
 Usage
 -----
@@ -23,3 +24,11 @@ see the generated HTML output.
 To make your own static article website copy the sample-data folder,
 add the target/postatic*-standalone.jar to your copy and adapt the shell
 script produce.sh to fit your needs.
+
+
+License
+=======
+
+Copyright 2013 F.Riemenschneider
+
+Distributed under the Eclipse Public License, the same as Clojure.
