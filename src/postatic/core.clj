@@ -3,14 +3,16 @@
   (:require [net.cgrand.enlive-html :as enl]
             [clojure.java.io :as io]
             [clojure.string :as string]
+            [clojure.data.xml :as xml]
             [clj-time.format :as dt])
   (:use [postatic.utils]
         [clojure.tools.cli :only [cli]]
-        [clj-time.core :only [after? date-time now year]]))
+        [clj-time.core :only [after? date-time millis now year]]))
 
 ;; Article stuff
 
 (def ddmmyyyy (dt/formatter "dd.MM.yyyy"))
+(def rfc3339 (dt/formatter "yyyy-MM-dd'T'HH:mm:ss.SSSZZ"))
 
 (defn string-of-content
   [nodes selector]
@@ -52,27 +54,29 @@
 
 (defn article-href
   [article]
-  (-> article :file .getName))
+  (-> article :file .getName (string/escape {\space "%20"})))
 
 (defn enrich-article
-  [article]
+  [cfg article]
   (let [date (dt/unparse ddmmyyyy (:date article))
         title (:title article)
         href (article-href article)]
-    (assoc article :content
-           (enl/at (:content article)
-                   [:h1] (enl/substitute (enl/html
-                                          [:a {:name href}]
-                                          [:h1 title]
-                                          date " " [:a {:href href} "Permlink"] [:p]))))))
+    (assoc article
+      :content (enl/at (:content article)
+                       [:h1] (enl/substitute (enl/html
+                                              [:a {:name href}]
+                                              [:h1 title]
+                                              date " " [:a {:href href} "Permalink"] [:p])))
+      :author (:author cfg)
+      :email (:email cfg))))
 
 (defn read-articles
-  [dir]
+  [cfg dir]
   (log "Reading articles from" dir)
   (->> (file-seq dir)
        (filter article-file?)
        (map read-article)
-       (map enrich-article)
+       (map (partial enrich-article cfg))
        (sort #(.compareTo (:date %2) (:date %1)))))
 
 (defn read-me
@@ -80,6 +84,14 @@
   (enl/html-resource (io/file (dircat dir "me.html"))))
 
 ;; Grouping and Queries
+
+(defn feed-name
+  [topic]
+  (str "feed-" (if (string/blank? topic) "misc" (string/lower-case topic))))
+
+(defn feed-url
+  [site topic]
+  (str site "/" (feed-name topic) ".xml"))
 
 (defn from-current-year
   [articles]
@@ -149,10 +161,20 @@
    [:td (dt/unparse ddmmyyyy (:date article))]
    [:td [:a {:href (article-href article)} (:title article)]]])
 
-(defn list-groups
+(defn list-year-groups
   [groups]
-  (map (fn [[title articles]]
-         (enl/html [:h1 (if (string/blank? title) "Misc" title)]
+  (map (fn [[year articles]]
+         (enl/html [:h1 year]
+                   [:table (map article-link articles)]))
+       groups))
+
+(defn list-topic-groups
+  [site groups]
+  (map (fn [[topic articles]]
+         (enl/html [:h1 [:a {:href (feed-url site topic)}
+                         [:image {:src "rss-logo.png"}]]
+                    "  "
+                    (if (string/blank? topic) "Misc" topic)]
                    [:table (map article-link articles)]))
        groups))
 
@@ -177,15 +199,15 @@
   (let [template-fn (enl/template (template-html templates-dir) [articles]
                                   [:#content] (apply enl/content (->> articles
                                                                       group-by-year
-                                                                      list-groups)))]
+                                                                      list-year-groups)))]
     (produce-file (dircat output-dir "by-year.html") template-fn articles)))
 
 (defn produce-by-topic
-  [templates-dir output-dir articles]
+  [cfg templates-dir output-dir articles]
   (let [template-fn (enl/template (template-html templates-dir) [articles]
-                                  [:#content] (apply enl/content (->> articles
-                                                                      group-by-topic
-                                                                      list-groups)))]
+                                  [:#content] (apply enl/content (list-topic-groups
+                                                                  (:site cfg)
+                                                                  (group-by-topic articles))))]
     (produce-file (dircat output-dir "by-topic.html") template-fn articles)))
 
 (defn produce-about
@@ -195,28 +217,79 @@
     (produce-file (dircat output-dir "about.html") template-fn nil)))
 
 
+;; Feed production
+
+
+(def render-article (enl/template (enl/html-snippet "<div id='content'>") [a]
+                                  [:#content] (apply enl/content (:content a))))
+
+(defn feed-entry
+  [site article]
+  (let [link (str site "/" (article-href article))]
+    (xml/element :entry {}
+                 (xml/element :title {} (:title article))
+                 (xml/element :link {:href link :type "text/html"})
+                 (xml/element :id {} link)
+                 (xml/element :updated {} (dt/unparse rfc3339 (:date article)))
+                 (xml/element :summary {:type "html"} (->> article render-article (apply str)))
+                 (xml/element :author {}
+                              (xml/element :name {} (:author article))
+                              (xml/element :email {} (:email article))))))
+
+
+(defn feed
+  [cfg [topic articles]]
+  (let [entries (map (partial feed-entry (:site cfg)) articles)
+        youngest-date (->> articles (sort-by :date) last :date)
+        feed-link (feed-url (:site cfg) topic)]
+    (xml/element :feed {:xmlns "http://www.w3.org/2005/Atom"}
+                 (xml/element :title {} topic)
+                 (xml/element :id {} feed-link)
+                 (xml/element :link {:href feed-link :rel "self"})
+                 (xml/element :link {:href (:site cfg)})
+                 (xml/element :updated {} (dt/unparse rfc3339 youngest-date))
+                 entries)))
+
+
+(defn produce-feed
+  [cfg output-dir articles]
+  (let [groups (group-by-topic articles)]
+    (doseq [[topic as] groups]
+      (let [target-file (dircat output-dir (str "feed-" (string/lower-case topic) ".xml"))]
+        (log "Producing" target-file)
+        (spit target-file (xml/emit-str (feed cfg [topic as])))))))
+
+
 ;; Main production process
 
 (defn produce
-  [input-dir output-dir]
-  (let [templates-dir (io/file (dircat input-dir "templates"))
+  [cfg]
+  (let [input-dir (io/file (:input.dir cfg))
+        output-dir (io/file (:output.dir cfg))
+        templates-dir (io/file (dircat input-dir "templates"))
         articles-dir (io/file (dircat input-dir "articles"))
         resources-dir (io/file (dircat input-dir "resources"))]
     (log "All outputs are written to" output-dir)
     (clean-dir output-dir)
-    (let [articles (read-articles articles-dir)]
+    (let [articles (read-articles cfg articles-dir)]
       (produce-articles templates-dir output-dir articles)
       (produce-index templates-dir output-dir articles)
       (produce-by-year templates-dir output-dir articles)
-      (produce-by-topic templates-dir output-dir articles)
+      (produce-by-topic cfg templates-dir output-dir articles)
+      (produce-feed cfg output-dir articles)
       (copy-article-resources articles-dir output-dir articles))
     (let [me (read-me articles-dir)]
       (produce-about templates-dir output-dir me))
     (copy-common-resources resources-dir output-dir)
     (log "Done.")))
 
+
 (defn produce-sample []
-  (produce (io/file "./sample-data/input") (io/file "./sample-data/output")))
+  (produce {:input.dir "./sample-data/input"
+            :output.dir "./sample-data/output"
+            :site "http://my-article.com"
+            :email "john.doe@my-articles.com"
+            :author "John Doe"}))
 
 
 (defn -main [& args]
@@ -225,10 +298,15 @@
              ["-v" "--verbose" "Write log to stdout." :flag true :default false]
              ["-c" "--config" "Configuration properties file." :default "postatic.properties"])]
     (alter-var-root #'verbose-log (fn [_] (:verbose params)))
-    (let [cfg (load-props (:config params))
-          input-dir (-> cfg :input.dir io/file)
-          output-dir (-> cfg :output.dir io/file)]
+    (let [cfg (load-props (:config params))]
       (doseq [c commands]
         (case c
-          "produce" (produce input-dir output-dir)
-          "clean" (clean-dir output-dir))))))
+          "produce" (produce cfg)
+          "clean" (clean-dir (io/file (:output.dir cfg))))))))
+
+
+;; To get started in a REPL
+#_(def a (read-articles
+          {:email "john.doe@my-articles.com"
+           :author "John Doe"}
+          (io/file "./sample-data/input/articles")))
