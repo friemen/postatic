@@ -256,7 +256,7 @@
   [cfg output-dir articles]
   (let [groups (group-by-topic articles)]
     (doseq [[topic as] groups]
-      (let [target-file (feed-url output-dir (feed-name topic))]
+      (let [target-file (feed-url output-dir topic)]
         (log "Producing" target-file)
         (spit target-file (xml/emit-str (feed cfg [topic as])))))))
 
