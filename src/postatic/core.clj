@@ -188,8 +188,9 @@
     (produce-file (dircat output-dir "index.html") template-fn articles)))
 
 (defn produce-articles
-  [templates-dir output-dir articles]
+  [cfg templates-dir output-dir articles]
   (let [template-fn (enl/template (template-html templates-dir) [a]
+                                  [:head :title] (enl/content (str (:title a) " - " (:title cfg)))
                                   [:#content] (apply enl/content (:content a)))]
     (doseq [a articles]
       (produce-file (dircat output-dir (-> a :file .getName)) template-fn a))))
@@ -255,7 +256,7 @@
   [cfg output-dir articles]
   (let [groups (group-by-topic articles)]
     (doseq [[topic as] groups]
-      (let [target-file (dircat output-dir (str "feed-" (string/lower-case topic) ".xml"))]
+      (let [target-file (feed-url output-dir (feed-name topic))]
         (log "Producing" target-file)
         (spit target-file (xml/emit-str (feed cfg [topic as])))))))
 
@@ -272,7 +273,7 @@
     (log "All outputs are written to" output-dir)
     (clean-dir output-dir)
     (let [articles (read-articles cfg articles-dir)]
-      (produce-articles templates-dir output-dir articles)
+      (produce-articles cfg templates-dir output-dir articles)
       (produce-index templates-dir output-dir articles)
       (produce-by-year templates-dir output-dir articles)
       (produce-by-topic cfg templates-dir output-dir articles)
@@ -282,14 +283,6 @@
       (produce-about templates-dir output-dir me))
     (copy-common-resources resources-dir output-dir)
     (log "Done.")))
-
-
-(defn produce-sample []
-  (produce {:input.dir "./sample-data/input"
-            :output.dir "./sample-data/output"
-            :site "http://my-article.com"
-            :email "john.doe@my-articles.com"
-            :author "John Doe"}))
 
 
 (defn -main [& args]
@@ -306,7 +299,17 @@
 
 
 ;; To get started in a REPL
-#_(def a (read-articles
+
+(defn produce-sample []
+  (produce {:input.dir "./sample-data/input"
+            :output.dir "./sample-data/output"
+            :title "my-articles"
+            :site "http://my-article.com"
+            :email "john.doe@my-articles.com"
+            :author "John Doe"}))
+
+; read some sample articles
+#_(def as (read-articles
           {:email "john.doe@my-articles.com"
            :author "John Doe"}
           (io/file "./sample-data/input/articles")))

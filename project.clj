@@ -1,4 +1,4 @@
-(defproject postatic "1.1.0"
+(defproject postatic "1.1.1"
   :description "A generator for static websites made up of article-like postings."
   :url "https://github.com/friemen/postatic"
   :license {:name "Eclipse Public License"
