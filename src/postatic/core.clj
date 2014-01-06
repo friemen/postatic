@@ -93,10 +93,9 @@
   [site topic]
   (str site "/" (feed-name topic) ".xml"))
 
-(defn from-current-year
+(defn recent
   [articles]
-  (let [jan-1st (date-time (year (now)) 1 1)]
-    (take-while #(after? (:date %) jan-1st) articles)))
+  (take 5 articles))
 
 (defn group-by-year
   [articles]
@@ -182,7 +181,7 @@
   [templates-dir output-dir articles]
   (let [template-fn (enl/template (template-html templates-dir) [articles]
                                   [:#content] (apply enl/content (->> articles
-                                                                      from-current-year
+                                                                      recent
                                                                       (map :content)
                                                                       (interpose (enl/html [:p] [:hr])))))]
     (produce-file (dircat output-dir "index.html") template-fn articles)))
