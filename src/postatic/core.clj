@@ -138,7 +138,8 @@
   (doseq [a articles, fileref (:filerefs a)
           :let [src (io/file (dircat articles-dir fileref))
                 dst (io/file (dircat output-dir fileref))]
-          :when (not (article-file? src))]
+          :when (and (.isFile src) (not (article-file? src)))]
+    (log src " -> " dst)
     (io/copy src dst)))
 
 (defn clean-dir
@@ -162,20 +163,23 @@
 
 (defn list-year-groups
   [groups]
-  (map (fn [[year articles]]
-         (enl/html [:h1 year]
-                   [:table (map article-link articles)]))
-       groups))
+  (->> groups
+       (sort-by first)
+       reverse
+       (map (fn [[year articles]]
+              (enl/html [:h1 year]
+                        [:table (map article-link articles)])))))
 
 (defn list-topic-groups
   [site groups]
-  (map (fn [[topic articles]]
-         (enl/html [:h1 [:a {:href (feed-url site topic)}
-                         [:image {:src "rss-logo.png"}]]
-                    "  "
-                    (if (string/blank? topic) "Misc" topic)]
-                   [:table (map article-link articles)]))
-       groups))
+  (->> groups
+       (sort-by first)
+       (map (fn [[topic articles]]
+              (enl/html [:h1 [:a {:href (feed-url site topic)}
+                              [:image {:src "rss-logo.png"}]]
+                         "  "
+                         (if (string/blank? topic) "Misc" topic)]
+                        [:table (map article-link articles)])))))
 
 (defn produce-index
   [templates-dir output-dir articles]
