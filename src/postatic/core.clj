@@ -44,10 +44,10 @@
         date (-> html (string-of-content [:head :date]))
         title (-> html (string-of-content [:h1]))
         refs (-> html local-resources)]
-    (log "Found:" title date)
+    (log "Found:" title date topics)
     {:title title
      :date (dt/parse ddmmyyyy date)
-     :topics topics
+     :topics (if (string/blank? (apply str topics)) ["Misc"] topics)
      :file file
      :filerefs refs
      :content (-> html (enl/select [:#page]) first :content)}))
@@ -178,7 +178,7 @@
               (enl/html [:h1 [:a {:href (feed-url site topic)}
                               [:image {:src "rss-logo.png"}]]
                          "  "
-                         (if (string/blank? topic) "Misc" topic)]
+                         topic]
                         [:table (map article-link articles)])))))
 
 (defn produce-index
