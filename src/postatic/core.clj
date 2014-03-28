@@ -81,7 +81,8 @@
 
 (defn read-me
   [dir]
-  (enl/html-resource (io/file (dircat dir "me.html"))))
+  (-> (enl/html-resource (io/file (dircat dir "me.html")))
+      (enl/select [:#page]) first :content))
 
 ;; Grouping and Queries
 
