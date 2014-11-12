@@ -117,3 +117,18 @@ ul li {
     border-radius: 5px;
 }
 
+.share-bar {
+    margin-top: 1em;
+    text-align: center;
+}
+
+.share-bar a {
+    color: #fff;
+    font-family:Helvetica, sans-serif;
+    font-size: small;
+    font-weight: bold;
+    padding: 4px 8px 4px 8px;
+    border-radius: 4px;
+    margin-left: 4px;
+    margin-right: 4px;
+}

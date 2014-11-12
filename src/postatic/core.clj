@@ -9,6 +9,7 @@
         [clojure.tools.cli :only [cli]]
         [clj-time.core :only [after? date-time millis now year]]))
 
+;; ------------------------------------------------------------------------------------------
 ;; Article stuff
 
 (def ddmmyyyy (dt/formatter "dd.MM.yyyy"))
@@ -28,9 +29,9 @@
 
 (defn local-resources
   [nodes]
-  (let [srcs (-> nodes
-                 (enl/select [#{:img :source}])
-                 (->> (map #(-> % :attrs :src))))
+  (let [srcs   (-> nodes
+                   (enl/select [#{:img :source}])
+                   (->> (map #(-> % :attrs :src))))
         hrefs (-> nodes
                   (enl/select [[:a (enl/attr? :href)]])
                   (->> (map #(-> % :attrs :href))))]
@@ -39,11 +40,11 @@
 
 (defn read-article
   [file]
-  (let [html (enl/html-resource file)
+  (let [html   (enl/html-resource file)
         topics (-> html (string-of-content [:head :topics]) (string/split #"\s"))
-        date (-> html (string-of-content [:head :date]))
-        title (-> html (string-of-content [:h1]))
-        refs (-> html local-resources)]
+        date   (-> html (string-of-content [:head :date]))
+        title  (-> html (string-of-content [:h1]))
+        refs   (-> html local-resources)]
     (log "Found:" title date topics)
     {:title title
      :date (dt/parse ddmmyyyy date)
@@ -52,21 +53,43 @@
      :filerefs refs
      :content (-> html (enl/select [:#page]) first :content)}))
 
-(defn article-href
+(defn perma-href
   [article]
   (-> article :file .getName (string/escape {\space "%20"})))
 
+
+
 (defn enrich-article
   [cfg article]
-  (let [date (dt/unparse ddmmyyyy (:date article))
-        title (:title article)
-        href (article-href article)]
+  (let [date     (dt/unparse ddmmyyyy (:date article))
+        title    (:title article)
+        e-title  (string/escape title {\space "%20"})
+        p-href   (perma-href article)
+        full-url (str (:site cfg) "/" p-href)
+        t-href   (str "http://twitter.com/intent/tweet?text="
+                      e-title "%20-%20" full-url)
+        f-href   (str "https://www.facebook.com/sharer.php?u=" full-url)
+        g-href   (str "https://plus.google.com/share?url=" full-url)
+        l-href   (str "http://www.linkedin.com/shareArticle?mini=true&url=" full-url
+                      "&title=" (string/escape title {\space "%20"}))
+        x-href   (str "https://www.xing.com/social_plugins/share?url=" full-url)]
     (assoc article
-      :content (enl/at (:content article)
-                       [:h1] (enl/substitute (enl/html
-                                              [:a {:name href}]
-                                              [:h1 title]
-                                              date " " [:a {:href href} "Permalink"] [:p])))
+      :content (concat (enl/at (:content article)
+                               [:h1] (enl/substitute (enl/html
+                                                      [:a {:name p-href}]
+                                                      [:h1 title]
+                                                      date " " [:a {:href perma-href} "Permalink"] [:p])))
+                       (enl/html [:div {:class "share-bar"}
+                                  [:a {:class "xing-button" :target "_blank" :href x-href}
+                                   [:img {:src "xing-logo.png"}]]
+                                  [:a {:class "google-button" :target "_blank" :href g-href}
+                                   [:img {:src "google-plus-logo.png"}]]
+                                  [:a {:class "linkedin-button" :target "_blank" :href l-href}
+                                   [:img {:src "linkedin-logo.png"}]]
+                                  [:a {:class "twitter-button" :target "_blank" :href t-href}
+                                   [:img {:src "twitter-logo.png"}]]
+                                  [:a {:class "facebook-button" :target "_blank" :href f-href}
+                                   [:img {:src "facebook-logo.png"}]]]))
       :author (:author cfg)
       :email (:email cfg))))
 
@@ -84,6 +107,7 @@
   (-> (enl/html-resource (io/file (dircat dir "me.html")))
       (enl/select [:#page]) first :content))
 
+;; ------------------------------------------------------------------------------------------
 ;; Grouping and Queries
 
 (defn feed-name
@@ -113,6 +137,7 @@
               [k (vec (map second v))]))
        (into {})))
 
+;; ------------------------------------------------------------------------------------------
 ;; Production Helpers
 
 (defn emit-html
@@ -154,13 +179,14 @@
   [templates-dir]
   (enl/html-resource (io/file (dircat templates-dir "main.html"))))
 
+;; ------------------------------------------------------------------------------------------
 ;; Html Production using templates
 
 (defn article-link
   [article]
   [:tr
    [:td (dt/unparse ddmmyyyy (:date article))]
-   [:td [:a {:href (article-href article)} (:title article)]]])
+   [:td [:a {:href (perma-href article)} (:title article)]]])
 
 (defn list-year-groups
   [groups]
@@ -230,7 +256,7 @@
 
 (defn feed-entry
   [site article]
-  (let [link (str site "/" (article-href article))]
+  (let [link (str site "/" (perma-href article))]
     (xml/element :entry {}
                  (xml/element :title {} (:title article))
                  (xml/element :link {:href link :type "text/html"})
@@ -302,7 +328,8 @@
           "clean" (clean-dir (io/file (:output.dir cfg))))))))
 
 
-;; To get started in a REPL
+;; ------------------------------------------------------------------------------------------
+;; Tools for the REPL
 
 (defn produce-sample []
   (produce {:input.dir "./sample-data/input"
@@ -312,8 +339,16 @@
             :email "john.doe@my-articles.com"
             :author "John Doe"}))
 
-; read some sample articles
-#_(def as (read-articles
-          {:email "john.doe@my-articles.com"
-           :author "John Doe"}
-          (io/file "./sample-data/input/articles")))
+#_ (def render-article
+  (enl/template (template-html "./sample-data/input/templates") [a]
+                [:#content] (apply enl/content (:content a))))
+
+
+;; read some sample articles
+#_ (def as (vec (read-articles
+              {:email "john.doe@my-articles.com"
+               :author "John Doe"}
+              (io/file "./sample-data/input/articles"))))
+#_ (get-in as [0 :content])
+
+#_ (render-article (as 0))
