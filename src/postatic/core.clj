@@ -78,7 +78,7 @@
                                [:h1] (enl/substitute (enl/html
                                                       [:a {:name p-href}]
                                                       [:h1 title]
-                                                      date " " [:a {:href perma-href} "Permalink"] [:p])))
+                                                      date " " [:a {:href p-href} "Permalink"] [:p])))
                        (enl/html [:div {:class "share-bar"}
                                   [:a {:class "xing-button" :target "_blank" :href x-href}
                                    [:img {:src "xing-logo.png"}]]
