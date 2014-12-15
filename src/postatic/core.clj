@@ -270,9 +270,9 @@
 
 (defn feed
   [cfg [topic articles]]
-  (let [entries (map (partial feed-entry (:site cfg)) articles)
+  (let [entries       (map (partial feed-entry (:site cfg)) articles)
         youngest-date (->> articles (sort-by :date) last :date)
-        feed-link (feed-url (:site cfg) topic)]
+        feed-link     (feed-url (:site cfg) topic)]
     (xml/element :feed {:xmlns "http://www.w3.org/2005/Atom"}
                  (xml/element :title {} topic)
                  (xml/element :id {} feed-link)
@@ -282,13 +282,15 @@
                  entries)))
 
 
-(defn produce-feed
+(defn produce-feeds
   [cfg output-dir articles]
-  (let [groups (group-by-topic articles)]
-    (doseq [[topic as] groups]
-      (let [target-file (feed-url output-dir topic)]
-        (log "Producing" target-file)
-        (spit target-file (xml/emit-str (feed cfg [topic as])))))))
+  (letfn [(produce [topic as]
+            (let [target-file (feed-url output-dir topic)]
+              (log "Producing" target-file)
+              (spit target-file (xml/emit-str (feed cfg [topic as])))))]
+    (produce "All" articles)
+    (doseq [[topic as] (group-by-topic articles)]
+      (produce topic as))))
 
 
 ;; Main production process
@@ -307,7 +309,7 @@
       (produce-index templates-dir output-dir articles)
       (produce-by-year templates-dir output-dir articles)
       (produce-by-topic cfg templates-dir output-dir articles)
-      (produce-feed cfg output-dir articles)
+      (produce-feeds cfg output-dir articles)
       (copy-article-resources articles-dir output-dir articles))
     (let [me (read-me articles-dir)]
       (produce-about templates-dir output-dir me))
