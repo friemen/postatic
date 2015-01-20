@@ -80,16 +80,16 @@
                                                       [:h1 title]
                                                       date " " [:a {:href p-href} "Permalink"] [:p])))
                        (enl/html [:div {:class "share-bar"}
-                                  [:a {:class "xing-button" :target "_blank" :href x-href}
-                                   [:img {:src "xing-logo.png"}]]
-                                  [:a {:class "google-button" :target "_blank" :href g-href}
-                                   [:img {:src "google-plus-logo.png"}]]
-                                  [:a {:class "linkedin-button" :target "_blank" :href l-href}
-                                   [:img {:src "linkedin-logo.png"}]]
-                                  [:a {:class "twitter-button" :target "_blank" :href t-href}
-                                   [:img {:src "twitter-logo.png"}]]
-                                  [:a {:class "facebook-button" :target "_blank" :href f-href}
-                                   [:img {:src "facebook-logo.png"}]]]))
+                                  [:a {:target "_blank" :href x-href}
+                                   [:i {:class "xing-button icon-xing"}]]
+                                  [:a {:target "_blank" :href g-href}
+                                   [:i {:class "gplus-button icon-gplus"}]]
+                                  [:a {:target "_blank" :href l-href}
+                                   [:i {:class "linkedin-button icon-linkedin"}]]
+                                  [:a {:target "_blank" :href t-href}
+                                   [:i {:class "twitter-button icon-twitter"}]]
+                                  [:a {:target "_blank" :href f-href}
+                                   [:i {:class "facebook-button icon-facebook"}]]]))
       :author (:author cfg)
       :email (:email cfg))))
 
@@ -203,7 +203,7 @@
        (sort-by first)
        (map (fn [[topic articles]]
               (enl/html [:h1 [:a {:href (feed-url site topic)}
-                              [:image {:src "rss-logo.png"}]]
+                              [:i {:style "color:#FEA501" :class "icon-rss-squared"}]]
                          "  "
                          topic]
                         [:table (map article-link articles)])))))
