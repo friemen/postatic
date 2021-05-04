@@ -69,7 +69,6 @@
         t-href   (str "http://twitter.com/intent/tweet?text="
                       e-title "%20-%20" full-url)
         f-href   (str "https://www.facebook.com/sharer.php?u=" full-url)
-        g-href   (str "https://plus.google.com/share?url=" full-url)
         l-href   (str "http://www.linkedin.com/shareArticle?mini=true&url=" full-url
                       "&title=" (string/escape title {\space "%20"}))
         x-href   (str "https://www.xing.com/social_plugins/share?url=" full-url)]
@@ -82,8 +81,6 @@
                        (enl/html [:div {:class "share-bar"}
                                   [:a {:target "_blank" :href x-href}
                                    [:i {:class "xing-button icon-xing"}]]
-                                  [:a {:target "_blank" :href g-href}
-                                   [:i {:class "gplus-button icon-gplus"}]]
                                   [:a {:target "_blank" :href l-href}
                                    [:i {:class "linkedin-button icon-linkedin"}]]
                                   [:a {:target "_blank" :href t-href}
@@ -106,6 +103,13 @@
   [dir]
   (-> (enl/html-resource (io/file (dircat dir "me.html")))
       (enl/select [:#page]) first :content))
+
+
+(defn read-privacy-policy
+  [dir]
+  (-> (enl/html-resource (io/file (dircat dir "privacy-policy.html")))
+      (enl/select [:#page]) first :content))
+
 
 ;; ------------------------------------------------------------------------------------------
 ;; Grouping and Queries
@@ -248,6 +252,12 @@
     (produce-file (dircat output-dir "about.html") template-fn nil)))
 
 
+(defn produce-privacy-policy
+  [templates-dir output-dir pp]
+  (let [template-fn (enl/template (template-html templates-dir) [_]
+                                  [:#content] (enl/content pp))]
+    (produce-file (dircat output-dir "privacy-policy.html") template-fn nil)))
+
 ;; Feed production
 
 
@@ -313,6 +323,8 @@
       (copy-article-resources articles-dir output-dir articles))
     (let [me (read-me articles-dir)]
       (produce-about templates-dir output-dir me))
+    (let [privacy-policy (read-privacy-policy articles-dir)]
+      (produce-privacy-policy templates-dir output-dir privacy-policy))
     (copy-common-resources resources-dir output-dir)
     (log "Done.")))
 
