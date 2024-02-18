@@ -1,9 +1,9 @@
-(defproject postatic "1.1.7"
+(defproject postatic "1.1.8"
   :description "A generator for static websites made up of article-like postings."
   :url "https://github.com/friemen/postatic"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.5.1"]
+  :dependencies [[org.clojure/clojure "1.10.1"]
                  [org.clojure/tools.cli "0.2.2"]
                  [org.clojure/data.xml "0.0.7"]
                  [enlive "1.1.1"]

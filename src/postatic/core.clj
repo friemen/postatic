@@ -57,42 +57,40 @@
   [article]
   (-> article :file .getName (string/escape {\space "%20"})))
 
-
-
 (defn enrich-article
   [cfg article]
-  (let [date     (dt/unparse ddmmyyyy (:date article))
-        title    (:title article)
-        e-title  (string/escape title {\space "%20"})
-        p-href   (perma-href article)
-        full-url (str (:site cfg) "/" p-href)
-        t-href   (str "http://twitter.com/intent/tweet?text="
-                      e-title "%20-%20" full-url)
-        f-href   (str "https://www.facebook.com/sharer.php?u=" full-url)
-        l-href   (str "http://www.linkedin.com/shareArticle?mini=true&url=" full-url
-                      "&title=" (string/escape title {\space "%20"}))
-        x-href   (str "https://www.xing.com/social_plugins/share?url=" full-url)]
+  (let [date      (dt/unparse ddmmyyyy (:date article))
+        title     (:title article)
+        e-title   (string/escape title {\space "%20"})
+        p-href    (perma-href article)
+        full-url  (str (:site cfg) "/" p-href)
+        x-href    (str "http://twitter.com/intent/tweet?text="
+                       e-title "%20-%20" full-url)
+        face-href (str "https://www.facebook.com/sharer.php?u=" full-url)
+        link-href (str "http://www.linkedin.com/shareArticle?mini=true&url=" full-url
+                       "&title=" (string/escape title {\space "%20"}))
+        xing-href (str "https://www.xing.com/social_plugins/share?url=" full-url)]
     (assoc article
-      :content (concat (enl/at (:content article)
-                               [:h1] (enl/substitute (enl/html
-                                                      [:a {:name p-href}]
-                                                      [:h1 title]
-                                                      date " " [:a {:href p-href} "Permalink"] [:p])))
-                       (enl/html [:div {:class "share-bar"}
-                                  [:a {:target "_blank" :href x-href}
-                                   [:i {:class "xing-button icon-xing"}]]
-                                  [:a {:target "_blank" :href l-href}
-                                   [:i {:class "linkedin-button icon-linkedin"}]]
-                                  [:a {:target "_blank" :href t-href}
-                                   [:i {:class "twitter-button icon-twitter"}]]
-                                  [:a {:target "_blank" :href f-href}
-                                   [:i {:class "facebook-button icon-facebook"}]]]))
-      :author (:author cfg)
-      :email (:email cfg))))
+           :content (concat (enl/at (:content article)
+                                    [:h1] (enl/substitute (enl/html
+                                                            [:a {:name p-href}]
+                                                            [:h1 title]
+                                                            date " " [:a {:href p-href} "Permalink"] [:p])))
+                            (enl/html [:div {:class "share-bar"}
+                                       [:a {:target "_blank" :href xing-href}
+                                        [:i {:class "xing-button icon-xing"}]]
+                                       [:a {:target "_blank" :href link-href}
+                                        [:i {:class "linkedin-button icon-linkedin"}]]
+                                       [:a {:target "_blank" :href x-href}
+                                        [:i {:class "x-button icon-x"}]]
+                                       [:a {:target "_blank" :href face-href}
+                                        [:i {:class "facebook-button icon-facebook"}]]]))
+           :author (:author cfg)
+           :email (:email cfg))))
 
 (defn read-articles
   [cfg dir]
-  (log "Reading articles from" dir)
+  (log "Reading articles from" (str dir))
   (->> (file-seq dir)
        (filter article-file?)
        (map read-article)
@@ -103,7 +101,6 @@
   [dir]
   (-> (enl/html-resource (io/file (dircat dir "me.html")))
       (enl/select [:#page]) first :content))
-
 
 (defn read-privacy-policy
   [dir]
@@ -150,12 +147,12 @@
 
 (defn produce-file
   [target-file template-fn content]
-  (log "Producing" target-file)
+  (log "Producing" (str target-file))
   (spit target-file (emit-html (template-fn content))))
 
 (defn copy-common-resources
   [resources-dir output-dir]
-  (log "Copying common resources from" resources-dir)
+  (log "Copying common resources from" (str resources-dir))
   (doseq [src (file-seq resources-dir)]
     (if (.isFile src)
       (let [filename (.getName src)
@@ -164,17 +161,17 @@
 
 (defn copy-article-resources
   [articles-dir output-dir articles]
-  (log "Copying local files referenced by articles from" articles-dir)
+  (log "Copying local files referenced by articles from" (str articles-dir))
   (doseq [a articles, fileref (:filerefs a)
           :let [src (io/file (dircat articles-dir fileref))
                 dst (io/file (dircat output-dir fileref))]
           :when (and (.isFile src) (not (article-file? src)))]
-    (log src " -> " dst)
+    (log (str src) " -> " (str dst))
     (io/copy src dst)))
 
 (defn clean-dir
   [dir]
-  (log "Cleaning" dir)
+  (log "Cleaning" (str dir))
   (doseq [file (.listFiles dir)]
     (io/delete-file file true))
   (.mkdir dir))
@@ -296,7 +293,7 @@
   [cfg output-dir articles]
   (letfn [(produce [topic as]
             (let [target-file (feed-url output-dir topic)]
-              (log "Producing" target-file)
+              (log "Producing" (str target-file))
               (spit target-file (xml/emit-str (feed cfg [topic as])))))]
     (produce "All" articles)
     (doseq [[topic as] (group-by-topic articles)]
@@ -312,7 +309,7 @@
         templates-dir (io/file (dircat input-dir "templates"))
         articles-dir (io/file (dircat input-dir "articles"))
         resources-dir (io/file (dircat input-dir "resources"))]
-    (log "All outputs are written to" output-dir)
+    (log "All outputs are written to" (str output-dir))
     (clean-dir output-dir)
     (let [articles (read-articles cfg articles-dir)]
       (produce-articles cfg templates-dir output-dir articles)
